@@ -102,18 +102,35 @@ void setup_wifi() {
 void callback(char* topic, byte* payload, unsigned int length) {
   // This is called when a message with the correct topic arrives
   char message[10] ="";
-  Serial.print("Message arrived [");
-  Serial.print(topic);
-  Serial.print("] ");
+  Serial.print("Message arrived topic=");
+  Serial.println(topic);
   for (int i = 0; i < length; i++) {
-    Serial.print((char)payload[i]);
+    //Serial.print((char)payload[i]);
     message[i] = payload[i];
   }
-  Serial.println(message);
-  Serial.println();
-     irsend.sendSAMSUNG(0xE0E040BF, 32);
-
-    delay(40);
+  String sMess = message;
+  // Message is sent like "code/length". We have to split this, length is 2 chars
+  int sLen = sMess.length();
+  Serial.print ("Lenght(sLen): ");
+  Serial.println(sLen);
+  String irCode = sMess.substring(0,sLen-5);
+  String messLen = sMess.substring(sLen-4, sLen-2); // Remove two chars + line ending
+  irCode = "0x" + irCode;
+  
+  // The payload is in message
+  Serial.print("irCode:---");
+  Serial.print(irCode);
+  Serial.println("---");
+  Serial.print("Code length:---");
+  Serial.print(messLen);
+  Serial.println("---");
+  //irsend.sendSAMSUNG(0xE0E040BF, 32);
+  // Convert to right format
+  // (   void sendSAMSUNG(unsigned long data, int nbits);)
+  long lirCode = irCode.toInt();
+  int imessLen = messLen.toInt();
+  irsend.sendSAMSUNG(lirCode, imessLen);
+  delay(40);
 
 }
 
