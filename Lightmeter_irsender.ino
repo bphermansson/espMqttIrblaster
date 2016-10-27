@@ -4,7 +4,19 @@
 * Also receives Mqtt messages and sends IR codes to the tv and more
 * PHermansson 20161018
 * 
-* mosquitto_pub -h 192.168.1.79 -u 'emonpi' -P 'emonpimqtt2016' -t 'irsender' -m 'mess'
+* Send Mqtt messages like this "Manufacturer code, ir code, code length"
+* Manufacturer code are 1 for Samsung, 2 for LG
+* 
+* ir code 
+* Find your remote at http://lirc.sourceforge.net/remotes/
+* Note bits, pre_data_bits, pre_data and a code
+* Example, Samsung BN59-00538A. 
+* bits = 16, pre_data_bits = 16, pre_data = 0xE0E0, power on/off code = 0x40BF
+* 
+* Then the message to send is Manu code, pre_data+code, pre_data_bits+bits =
+* "1,E0E040BF,32"
+* 
+* mosquitto_pub -h 192.168.1.79 -u 'emonpi' -P 'emonpimqtt2016' -t 'irsender' -m '1,E0E040BF,32'
 */
 
 /*
@@ -38,7 +50,7 @@
 #include <PubSubClient.h>
 // Ir remote
 #include <IRremoteESP8266.h>
-IRsend irsend(3); //an IR led is connected to GPIO pin 3
+IRsend irsend(13); //an IR led is connected to GPIO pin 3
 unsigned int Samsung_power_toggle[71] = {38000,1,1,170,170,20,63,20,63,20,63,20,20,20,20,20,20,20,20,20,20,20,63,20,63,20,63,20,20,20,20,20,20,20,20,20,20,20,20,20,63,20,20,20,20,20,20,20,20,20,20,20,20,20,63,20,20,20,63,20,63,20,63,20,63,20,63,20,63,20,1798};
 
 
@@ -63,8 +75,8 @@ void setup() {
   digitalWrite(2, LOW); 
   
   // Use Gpio3 (== RX) for Ir transmitter
-  //  Serial.begin(115200);
-  Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY);
+  Serial.begin(115200);
+  //Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY);
 
   setup_wifi();
 
@@ -104,34 +116,36 @@ void callback(char* topic, byte* payload, unsigned int length) {
   char message[10] ="";
   Serial.print("Message arrived topic=");
   Serial.println(topic);
+  // Convert to correct format
   for (int i = 0; i < length; i++) {
-    //Serial.print((char)payload[i]);
     message[i] = payload[i];
   }
-  String sMess = message;
-  // Message is sent like "code/length". We have to split this, length is 2 chars
-  int sLen = sMess.length();
-  Serial.print ("Lenght(sLen): ");
-  Serial.println(sLen);
-  String irCode = sMess.substring(0,sLen-5);
-  String messLen = sMess.substring(sLen-4, sLen-2); // Remove two chars + line ending
-  irCode = "0x" + irCode;
-  
-  // The payload is in message
-  Serial.print("irCode:---");
-  Serial.print(irCode);
-  Serial.println("---");
-  Serial.print("Code length:---");
-  Serial.print(messLen);
-  Serial.println("---");
-  //irsend.sendSAMSUNG(0xE0E040BF, 32);
-  // Convert to right format
-  // (   void sendSAMSUNG(unsigned long data, int nbits);)
-  long lirCode = irCode.toInt();
-  int imessLen = messLen.toInt();
-  irsend.sendSAMSUNG(lirCode, imessLen);
-  delay(40);
+  String sMess(message);
+  Serial.print("Message: ");
+  Serial.println( sMess );
+  String irCode = sMess.substring(0,8);
+  Serial.print("irCode: ");
+  Serial.println( irCode );
 
+  String messLen = sMess.substring(9,11);
+  int imessLen = messLen.toInt();
+  Serial.print("Code length: ");
+  Serial.println(imessLen);
+
+  unsigned long decCode = hexToDec(irCode);
+  Serial.print("decCode: ");
+  Serial.println(decCode);
+
+  for (int i = 0; i < 3; i++) {
+    //irsend.sendSAMSUNG(0xE0E040BF, 32);
+    irsend.sendSAMSUNG(decCode, imessLen);
+    // It works to send the dec equivalent of 0xE0E040BF (=3772793023)
+    //irsend.sendSAMSUNG(3772793023, 32);
+
+    delay(40);
+  }
+
+  
 }
 
 void reconnect() {
@@ -203,4 +217,21 @@ int measureLight() {
     //Serial.println(level);
     return level;
 }
-
+unsigned long hexToDec(String hexString) {
+  https://github.com/benrugg/Arduino-Hex-Decimal-Conversion/blob/master/hex_dec.ino
+  unsigned long decValue = 0;
+  int nextInt;
+  
+  for (int i = 0; i < hexString.length(); i++) {
+    
+    nextInt = int(hexString.charAt(i));
+    if (nextInt >= 48 && nextInt <= 57) nextInt = map(nextInt, 48, 57, 0, 9);
+    if (nextInt >= 65 && nextInt <= 70) nextInt = map(nextInt, 65, 70, 10, 15);
+    if (nextInt >= 97 && nextInt <= 102) nextInt = map(nextInt, 97, 102, 10, 15);
+    nextInt = constrain(nextInt, 0, 15);
+    
+    decValue = (decValue * 16) + nextInt;
+  }
+  
+  return decValue;
+}
