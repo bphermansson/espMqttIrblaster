@@ -113,7 +113,7 @@ void setup_wifi() {
 
 void callback(char* topic, byte* payload, unsigned int length) {
   // This is called when a message with the correct topic arrives
-  char message[10] ="";
+  char message[12] ="";
   Serial.print("Message arrived topic=");
   Serial.println(topic);
   // Convert to correct format
@@ -123,11 +123,18 @@ void callback(char* topic, byte* payload, unsigned int length) {
   String sMess(message);
   Serial.print("Message: ");
   Serial.println( sMess );
-  String irCode = sMess.substring(0,8);
+
+  // Manufacturers are listed here:
+  // https://github.com/markszabo/IRremoteESP8266/blob/master/IRremoteESP8266.h
+  String manucode = sMess.substring(0,1);
+  Serial.print("Manu code: ");
+  Serial.println( manucode );
+  
+  String irCode = sMess.substring(2,10);
   Serial.print("irCode: ");
   Serial.println( irCode );
 
-  String messLen = sMess.substring(9,11);
+  String messLen = sMess.substring(11,13);
   int imessLen = messLen.toInt();
   Serial.print("Code length: ");
   Serial.println(imessLen);
@@ -138,11 +145,18 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
   for (int i = 0; i < 3; i++) {
     //irsend.sendSAMSUNG(0xE0E040BF, 32);
-    irsend.sendSAMSUNG(decCode, imessLen);
-    // It works to send the dec equivalent of 0xE0E040BF (=3772793023)
-    //irsend.sendSAMSUNG(3772793023, 32);
+    if (manucode=="1") {
+      Serial.println("Send Samsung code");;
+      irsend.sendSAMSUNG(decCode, imessLen);
+      // It works to send the dec equivalent of 0xE0E040BF (=3772793023)
+      //irsend.sendSAMSUNG(3772793023, 32);
+      delay(40);
+    }
+    else if (manucode=="2") {
+      irsend.sendLG(decCode, imessLen);
 
-    delay(40);
+    }
+    
   }
 
   
