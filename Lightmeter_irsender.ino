@@ -13,10 +13,12 @@
 * Example, Samsung BN59-00538A. 
 * bits = 16, pre_data_bits = 16, pre_data = 0xE0E0, power on/off code = 0x40BF
 * 
-* Then the message to send is Manu code, pre_data+code, pre_data_bits+bits =
-* "1,E0E040BF,32"
+* Then the message to send is Manu code, pre_data+code, pre_data_bits+bits, longpress (0 or 1) =
+* "1,E0E040BF,32,1"
 * 
-* mosquitto_pub -h 192.168.1.79 -u 'emonpi' -P 'emonpimqtt2016' -t 'irsender' -m '1,E0E040BF,32'
+* Longpress gives a longer transmission, sometimes needed to turn of equipment.
+* 
+* mosquitto_pub -h 192.168.1.79 -u 'emonpi' -P 'emonpimqtt2016' -t 'irsender' -m '1,E0E040BF,32,1'
 */
 
 /*
@@ -113,7 +115,7 @@ void setup_wifi() {
 
 void callback(char* topic, byte* payload, unsigned int length) {
   // This is called when a message with the correct topic arrives
-  char message[12] ="";
+  char message[14] ="";
   Serial.print("Message arrived topic=");
   Serial.println(topic);
   // Convert to correct format
@@ -139,26 +141,38 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Code length: ");
   Serial.println(imessLen);
 
+  String longpress = sMess.substring(14,15);
+  int ilongpress = longpress.toInt();
+  Serial.print("Longpress: ");
+  Serial.println(ilongpress);
+  
   unsigned long decCode = hexToDec(irCode);
   Serial.print("decCode: ");
   Serial.println(decCode);
-
-  for (int i = 0; i < 3; i++) {
-    //irsend.sendSAMSUNG(0xE0E040BF, 32);
-    if (manucode=="1") {
-      Serial.println("Send Samsung code");;
-      irsend.sendSAMSUNG(decCode, imessLen);
-      // It works to send the dec equivalent of 0xE0E040BF (=3772793023)
-      //irsend.sendSAMSUNG(3772793023, 32);
-      delay(40);
-    }
-    else if (manucode=="2") {
-      irsend.sendLG(decCode, imessLen);
-
-    }
-    
+  int repeats;
+  if (ilongpress==1) {
+    repeats = 5;
   }
-
+  else {
+    repeats = 3;
+  }
+  for (int i = 0; i < repeats; i++) {
+      //irsend.sendSAMSUNG(0xE0E040BF, 32);
+      if (manucode=="1") {
+        
+        irsend.sendSAMSUNG(decCode, imessLen);
+        // It works to send the dec equivalent of 0xE0E040BF (=3772793023)
+        //irsend.sendSAMSUNG(3772793023, 32);
+        delay(100);
+      }
+      else if (manucode=="2") {
+        irsend.sendLG(decCode, imessLen);
+      }
+    else {
+      Serial.println("Incorrect manufacturer");
+    }  
+  
+  }
   
 }
 
