@@ -5,7 +5,7 @@
 * PHermansson 20161018
 * 
 * Send Mqtt messages like this "Manufacturer code, ir code, code length"
-* Manufacturer code are 1 for Samsung, 2 for LG
+* Manufacturer code are 1 for Samsung, 2 for LG, 3 for Yamaha
 * 
 * ir code 
 * Find your remote at http://lirc.sourceforge.net/remotes/
@@ -16,6 +16,7 @@
 * Then the message to send is Manu code, pre_data+code, pre_data_bits+bits, longpress (0 or 1) =
 * "1,E0E040BF,32,1"
 * 
+<<<<<<< HEAD:Lightmeter_irsender.ino
 * Longpress gives a longer transmission, sometimes needed to turn of equipment.
 * 
 * mosquitto_pub -h 192.168.1.79 -u 'emonpi' -P 'emonpimqtt2016' -t 'irsender' -m '1,E0E040BF,32,1'
@@ -44,6 +45,11 @@
   - Open the "Tools -> Board -> Board Manager" and click install for the ESP8266"
   - Select your ESP8266 in "Tools -> Board"
 
+=======
+* mosquitto_pub -h 192.168.1.79 -u 'emonpi' -P 'emonpimqtt2016' -t 'irsender' -m '1,E0E040BF,32'
+* LG TV On:
+* mosquitto_pub -h 192.168.1.79 -u 'emonpi' -P 'emonpimqtt2016' -t 'irsender' -m '2,20DF10EF,32'
+>>>>>>> e038dde391a3eb0783358d1748aae5ccb41c8597:Lightmeter_irsender/Lightmeter_irsender.ino
 */
 
 // EspWifi
@@ -55,6 +61,7 @@
 IRsend irsend(13); //an IR led is connected to GPIO pin 3
 unsigned int Samsung_power_toggle[71] = {38000,1,1,170,170,20,63,20,63,20,63,20,20,20,20,20,20,20,20,20,20,20,63,20,63,20,63,20,20,20,20,20,20,20,20,20,20,20,20,20,63,20,20,20,20,20,20,20,20,20,20,20,20,20,63,20,20,20,63,20,63,20,63,20,63,20,63,20,63,20,1798};
 
+int blueLed=15;
 
 // Update these with values suitable for your network.
 const char* ssid = "NETGEAR83";
@@ -74,7 +81,10 @@ int value = 0;
 void setup() {
   // Setup Gpio 2
   pinMode(2, OUTPUT);
-  digitalWrite(2, LOW); 
+  digitalWrite(2, HIGH); 
+
+  pinMode (blueLed, OUTPUT);
+  digitalWrite(blueLed,HIGH);
   
   // Use Gpio3 (== RX) for Ir transmitter
   Serial.begin(115200);
@@ -149,6 +159,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   unsigned long decCode = hexToDec(irCode);
   Serial.print("decCode: ");
   Serial.println(decCode);
+<<<<<<< HEAD:Lightmeter_irsender.ino
   int repeats;
   if (ilongpress==1) {
     repeats = 5;
@@ -173,6 +184,33 @@ void callback(char* topic, byte* payload, unsigned int length) {
     }  
   
   }
+=======
+  
+  digitalWrite(blueLed,LOW);
+
+  for (int i = 0; i < 3; i++) {
+    //irsend.sendSAMSUNG(0xE0E040BF, 32);
+    if (manucode=="1") {
+      Serial.println("Send Samsung code");
+      irsend.sendSAMSUNG(decCode, imessLen);
+      // It works to send the dec equivalent of 0xE0E040BF (=3772793023)
+      //irsend.sendSAMSUNG(3772793023, 32);
+      delay(40);
+    }
+    else if (manucode=="2") {
+      Serial.println("Send LG(NEC) code");
+      irsend.sendNEC(decCode, imessLen);
+      delay(40);
+    }
+    else if (manucode=="3") {
+      Serial.println("Send Yamaha(NEC) code");
+      irsend.sendNEC(decCode, imessLen);
+      delay(40);
+    }
+  }
+  digitalWrite(blueLed,HIGH);
+
+>>>>>>> e038dde391a3eb0783358d1748aae5ccb41c8597:Lightmeter_irsender/Lightmeter_irsender.ino
   
 }
 
