@@ -58,7 +58,7 @@
 #include <PubSubClient.h>
 // Ir remote
 #include <IRremoteESP8266.h>
-IRsend irsend(13); //an IR led is connected to GPIO pin 3
+IRsend irsend(3); //an IR led is connected to GPIO pin 3
 unsigned int Samsung_power_toggle[71] = {38000,1,1,170,170,20,63,20,63,20,63,20,20,20,20,20,20,20,20,20,20,20,63,20,63,20,63,20,20,20,20,20,20,20,20,20,20,20,20,20,63,20,20,20,20,20,20,20,20,20,20,20,20,20,63,20,20,20,63,20,63,20,63,20,63,20,63,20,63,20,1798};
 
 int blueLed=15;
@@ -152,21 +152,14 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.println(imessLen);
 
   String longpress = sMess.substring(14,15);
-  int ilongpress = longpress.toInt();
+  int repeats = longpress.toInt();
   Serial.print("Longpress: ");
-  Serial.println(ilongpress);
+  Serial.println(repeats);
   
   unsigned long decCode = hexToDec(irCode);
   Serial.print("decCode: ");
   Serial.println(decCode);
-<<<<<<< HEAD:Lightmeter_irsender.ino
-  int repeats;
-  if (ilongpress==1) {
-    repeats = 5;
-  }
-  else {
-    repeats = 3;
-  }
+
   for (int i = 0; i < repeats; i++) {
       //irsend.sendSAMSUNG(0xE0E040BF, 32);
       if (manucode=="1") {
@@ -184,11 +177,10 @@ void callback(char* topic, byte* payload, unsigned int length) {
     }  
   
   }
-=======
   
   digitalWrite(blueLed,LOW);
 
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < repeats; i++) {
     //irsend.sendSAMSUNG(0xE0E040BF, 32);
     if (manucode=="1") {
       Serial.println("Send Samsung code");
@@ -210,7 +202,6 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
   digitalWrite(blueLed,HIGH);
 
->>>>>>> e038dde391a3eb0783358d1748aae5ccb41c8597:Lightmeter_irsender/Lightmeter_irsender.ino
   
 }
 
