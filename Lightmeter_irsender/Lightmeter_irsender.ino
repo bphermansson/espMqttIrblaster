@@ -121,6 +121,7 @@ void setup_wifi() {
   Serial.println("WiFi connected");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
+  
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
