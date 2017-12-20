@@ -1,57 +1,3 @@
-/*
-* Measure light level with an IR-transistor 
-* and send the value via Mqtt.
-* Also receives Mqtt messages and sends IR codes to the tv and more
-* PHermansson 20161018
-* 
-* Send Mqtt messages like this "Manufacturer code, ir code, code length"
-* Manufacturer code are 1 for Samsung, 2 for LG, 3 for Yamaha
-* 
-* ir code 
-* Find your remote at http://lirc.sourceforge.net/remotes/
-* Note bits, pre_data_bits, pre_data and a code
-* Example, Samsung BN59-00538A. 
-* bits = 16, pre_data_bits = 16, pre_data = 0xE0E0, power on/off code = 0x40BF
-* 
-* Then the message to send is Manu code, pre_data+code, pre_data_bits+bits, longpress (0 or 1) =
-* "1,E0E040BF,32,1"
-* 
-<<<<<<< HEAD:Lightmeter_irsender.ino
-* Longpress gives a longer transmission, sometimes needed to turn of equipment.
-* 
-* mosquitto_pub -h 192.168.1.79 -u 'emonpi' -P 'emonpimqtt2016' -t 'irsender' -m '1,E0E040BF,32,1'
-*/
-
-/*
- Basic ESP8266 MQTT example
-
- This sketch demonstrates the capabilities of the pubsub library in combination
- with the ESP8266 board/library.
-
- It connects to an MQTT server then:
-  - publishes "hello world" to the topic "outTopic" every two seconds
-  - subscribes to the topic "inTopic", printing out any messages
-    it receives. NB - it assumes the received payloads are strings not binary
-  - If the first character of the topic "inTopic" is an 1, switch ON the ESP Led,
-    else switch it off
-
- It will reconnect to the server if the connection is lost using a blocking
- reconnect function. See the 'mqtt_reconnect_nonblocking' example for how to
- achieve the same result without blocking the main loop.
-
- To install the ESP8266 board, (using Arduino 1.6.4+):
-  - Add the following 3rd party board manager under "File -> Preferences -> Additional Boards Manager URLs":
-       http://arduino.esp8266.com/stable/package_esp8266com_index.json
-  - Open the "Tools -> Board -> Board Manager" and click install for the ESP8266"
-  - Select your ESP8266 in "Tools -> Board"
-
-=======
-* mosquitto_pub -h 192.168.1.79 -u 'emonpi' -P 'emonpimqtt2016' -t 'irsender' -m '1,E0E040BF,32'
-* LG TV On:
-* mosquitto_pub -h 192.168.1.79 -u 'emonpi' -P 'emonpimqtt2016' -t 'irsender' -m '2,20DF10EF,32'
->>>>>>> e038dde391a3eb0783358d1748aae5ccb41c8597:Lightmeter_irsender/Lightmeter_irsender.ino
-*/
-
 // EspWifi
 #include <ESP8266WiFi.h>
 // Mqtt
@@ -59,8 +5,6 @@
 // Ir remote
 #include <IRremoteESP8266.h>
 IRsend irsend(3); //an IR led is connected to GPIO pin 3
-unsigned int Samsung_power_toggle[71] = {38000,1,1,170,170,20,63,20,63,20,63,20,20,20,20,20,20,20,20,20,20,20,63,20,63,20,63,20,20,20,20,20,20,20,20,20,20,20,20,20,63,20,20,20,20,20,20,20,20,20,20,20,20,20,63,20,20,20,63,20,63,20,63,20,63,20,63,20,63,20,1798};
-
 int blueLed=15;
 
 // Update these with values suitable for your network.
@@ -86,9 +30,9 @@ void setup() {
   pinMode (blueLed, OUTPUT);
   digitalWrite(blueLed,HIGH);
   
-  // Use Gpio3 (== RX) for Ir transmitter
-  Serial.begin(115200);
-  //Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY);
+  // Use Gpio3 (== RX on a Esp-01) for Ir transmitter
+  //Serial.begin(115200);
+  Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY);
 
   setup_wifi();
 
